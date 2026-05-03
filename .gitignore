@@ -1,0 +1,11 @@
+/target
+/Cargo.lock.bak
+**/*.rs.bk
+.DS_Store
+*.swp
+*.tmp
+.idea/
+.vscode/
+*.profraw
+lcov.info
+/coverage/

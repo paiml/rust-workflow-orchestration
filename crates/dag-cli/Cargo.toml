@@ -1,0 +1,12 @@
+[package]
+name = "dag-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "clap binary including dag-check (cycle detector)"
+
+[dependencies]
