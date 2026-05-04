@@ -7,6 +7,34 @@ repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "apalis-backed task executor with typed state"
+description = "Two DAG execution backends: in-process LocalRunner and forjar-subprocess ForjarRunner"
 
 [dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+tokio = { workspace = true }
+tracing.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+sqlx.workspace = true
+
+dag-core.workspace = true
+dag-lineage.workspace = true
+
+# Forjar feature
+indexmap = { version = "2", features = ["serde"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[features]
+default = []
+# Wraps the published `forjar` CLI to execute YAML-defined DAGs. The runner
+# itself shells out (forjar is a binary, not a library), so the feature flag
+# only gates the test that exercises the subprocess path and avoids
+# advertising a dependency the user has not installed.
+forjar = []

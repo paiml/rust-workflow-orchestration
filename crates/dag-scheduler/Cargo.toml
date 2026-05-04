@@ -7,6 +7,14 @@ repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "Cron, interval, and event triggers"
+description = "tokio-cron-scheduler wrapper that triggers DAG runs on a schedule"
 
 [dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true }
+tokio-cron-scheduler.workspace = true
+cron = "0.15"
+tracing.workspace = true
+uuid.workspace = true
+chrono.workspace = true
