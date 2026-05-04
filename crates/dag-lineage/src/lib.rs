@@ -339,9 +339,18 @@ mod tests {
     #[tokio::test]
     async fn record_and_query_roundtrip() {
         let store = fresh_store().await;
-        store.record_task_run(&rec("r1", "extract", "Succeeded")).await.unwrap();
-        store.record_task_run(&rec("r1", "transform", "Succeeded")).await.unwrap();
-        store.record_edge("r1", "extract", "transform").await.unwrap();
+        store
+            .record_task_run(&rec("r1", "extract", "Succeeded"))
+            .await
+            .unwrap();
+        store
+            .record_task_run(&rec("r1", "transform", "Succeeded"))
+            .await
+            .unwrap();
+        store
+            .record_edge("r1", "extract", "transform")
+            .await
+            .unwrap();
 
         assert_eq!(store.edge_count(Some("r1")).await.unwrap(), 1);
         assert_eq!(
@@ -366,8 +375,14 @@ mod tests {
     #[tokio::test]
     async fn upsert_overwrites_state() {
         let store = fresh_store().await;
-        store.record_task_run(&rec("r1", "extract", "Running")).await.unwrap();
-        store.record_task_run(&rec("r1", "extract", "Succeeded")).await.unwrap();
+        store
+            .record_task_run(&rec("r1", "extract", "Running"))
+            .await
+            .unwrap();
+        store
+            .record_task_run(&rec("r1", "extract", "Succeeded"))
+            .await
+            .unwrap();
         let runs = store.task_runs_for_run("r1").await.unwrap();
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].state, "Succeeded");
@@ -376,9 +391,18 @@ mod tests {
     #[tokio::test]
     async fn mermaid_render_includes_node_and_edge() {
         let store = fresh_store().await;
-        store.record_task_run(&rec("r1", "extract", "Succeeded")).await.unwrap();
-        store.record_task_run(&rec("r1", "transform", "Succeeded")).await.unwrap();
-        store.record_edge("r1", "extract", "transform").await.unwrap();
+        store
+            .record_task_run(&rec("r1", "extract", "Succeeded"))
+            .await
+            .unwrap();
+        store
+            .record_task_run(&rec("r1", "transform", "Succeeded"))
+            .await
+            .unwrap();
+        store
+            .record_edge("r1", "extract", "transform")
+            .await
+            .unwrap();
         let mermaid = store.render_mermaid("r1").await.unwrap();
         assert!(mermaid.starts_with("graph TD"));
         assert!(mermaid.contains("[\"extract\"]"));

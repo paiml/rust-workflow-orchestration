@@ -111,15 +111,14 @@ impl ForjarRunner {
             .stderr(Stdio::piped())
             .output()
             .await
-            .with_context(|| {
-                format!("failed to spawn forjar at {}", self.forjar_bin.display())
-            })?;
+            .with_context(|| format!("failed to spawn forjar at {}", self.forjar_bin.display()))?;
         Ok(out)
     }
 
-    /// Verify the forjar CLI is reachable. Useful as a pre-flight in tests
-    /// + the `dag-cli` subcommand so we can fail with a clean message
-    /// rather than mid-run.
+    /// Verify the forjar CLI is reachable.
+    ///
+    /// Useful as a pre-flight in tests + the `dag-cli` subcommand so we
+    /// can fail with a clean message rather than mid-run.
     pub async fn check_forjar_present(&self) -> Result<()> {
         let out = self.run_forjar(&["--version"]).await?;
         if !out.status.success() {
@@ -166,7 +165,8 @@ impl Runner for ForjarRunner {
 
         // 4. validate (no side effects) — every task starts in Running.
         for id in &task_ids {
-            self.persist_state(run_id, id, TaskState::Running, None).await?;
+            self.persist_state(run_id, id, TaskState::Running, None)
+                .await?;
         }
         info!(
             yaml = %self.yaml_path.display(),
@@ -183,7 +183,8 @@ impl Runner for ForjarRunner {
         if !validate_out.status.success() {
             // Mark every task Failed so the report shape is honest.
             for id in &task_ids {
-                self.persist_state(run_id, id, TaskState::Failed, None).await?;
+                self.persist_state(run_id, id, TaskState::Failed, None)
+                    .await?;
             }
             anyhow::bail!(
                 "forjar validate failed: {}",
@@ -223,13 +224,8 @@ impl Runner for ForjarRunner {
                 "kind": res.resource_type.clone().unwrap_or_else(|| "unknown".into()),
             });
             task_outputs.insert(id.clone(), payload.clone());
-            self.persist_state(
-                run_id,
-                id,
-                TaskState::Succeeded,
-                Some(payload.to_string()),
-            )
-            .await?;
+            self.persist_state(run_id, id, TaskState::Succeeded, Some(payload.to_string()))
+                .await?;
             task_states.insert(id.clone(), TaskState::Succeeded);
         }
 
@@ -282,9 +278,9 @@ fn topo_order_from_resources(yaml: &ForjarYaml) -> Result<Vec<String>> {
     for (id, res) in &yaml.resources {
         let to = indices[id];
         for dep in &res.depends_on {
-            let from = *indices
-                .get(dep)
-                .ok_or_else(|| anyhow::anyhow!("forjar.yaml: '{}' depends on unknown '{}'", id, dep))?;
+            let from = *indices.get(dep).ok_or_else(|| {
+                anyhow::anyhow!("forjar.yaml: '{}' depends on unknown '{}'", id, dep)
+            })?;
             dag.add_edge(from, to)
                 .with_context(|| format!("ForjarRunner: failed to add edge {dep} -> {id}"))?;
         }

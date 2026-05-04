@@ -70,7 +70,12 @@ impl Runner for LocalRunner {
         // closing demo's "lineage-edge-count" contract assert on the DAG
         // shape even if a downstream task fails part-way through.
         for (from, to) in self.dag.edges() {
-            let upstream_id = self.dag.payload(from).expect("from in dag").id().to_string();
+            let upstream_id = self
+                .dag
+                .payload(from)
+                .expect("from in dag")
+                .id()
+                .to_string();
             let downstream_id = self.dag.payload(to).expect("to in dag").id().to_string();
             self.lineage
                 .record_edge(run_id, &upstream_id, &downstream_id)
@@ -80,9 +85,8 @@ impl Runner for LocalRunner {
 
         // 3. per-run scratch dir
         let scratch_dir = self.scratch_root.join(run_id);
-        std::fs::create_dir_all(&scratch_dir).with_context(|| {
-            format!("failed to create scratch dir {}", scratch_dir.display())
-        })?;
+        std::fs::create_dir_all(&scratch_dir)
+            .with_context(|| format!("failed to create scratch dir {}", scratch_dir.display()))?;
         let ctx = Context::new(run_id, scratch_dir);
 
         // 4. walk the order, fail-fast on any task error.
@@ -97,12 +101,14 @@ impl Runner for LocalRunner {
             topo_ids.push(task_id.clone());
 
             if failure_seen {
-                self.persist_state(run_id, &task_id, TaskState::Skipped, None).await?;
+                self.persist_state(run_id, &task_id, TaskState::Skipped, None)
+                    .await?;
                 task_states.insert(task_id, TaskState::Skipped);
                 continue;
             }
 
-            self.persist_state(run_id, &task_id, TaskState::Running, None).await?;
+            self.persist_state(run_id, &task_id, TaskState::Running, None)
+                .await?;
             task_states.insert(task_id.clone(), TaskState::Running);
             info!(run = %run_id, task = %task_id, "task running");
 
@@ -113,13 +119,8 @@ impl Runner for LocalRunner {
                     let json = out.as_json();
                     task_outputs.insert(task_id.clone(), json.clone());
                     let json_string = serde_json::to_string(&json).ok();
-                    self.persist_state(
-                        run_id,
-                        &task_id,
-                        TaskState::Succeeded,
-                        json_string,
-                    )
-                    .await?;
+                    self.persist_state(run_id, &task_id, TaskState::Succeeded, json_string)
+                        .await?;
                     task_states.insert(task_id, TaskState::Succeeded);
                 }
                 Err(e) => {
@@ -190,6 +191,9 @@ where
     F: Fn(Context) -> Fut + Send + Sync + 'static,
     Fut: std::future::Future<Output = Result<TaskOutput>> + Send + 'static,
 {
+    /// Construct an `Arc<dyn Task>` from an async closure. Returns the
+    /// trait object so the result can drop straight into `Dag::add_node`.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<String>, f: F) -> Arc<dyn Task> {
         Arc::new(ClosureTask { id: id.into(), f })
     }

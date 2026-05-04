@@ -7,6 +7,33 @@ repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "clap binary including dag-check (cycle detector)"
+description = "Command-line driver for the c16 workflow-orchestration workspace (validate / run / schedule / lineage / backfill)"
+
+[[bin]]
+name = "dag"
+path = "src/main.rs"
+
+[[example]]
+name = "etl_pipeline_dag"
+path = "examples/etl_pipeline_dag.rs"
+required-features = []
 
 [dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+tokio = { workspace = true }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+chrono.workspace = true
+sqlx.workspace = true
+
+dag-core.workspace = true
+dag-lineage.workspace = true
+dag-scheduler.workspace = true
+dag-runner = { workspace = true, features = ["forjar"] }
+
+[dev-dependencies]
+tempfile = "3"
