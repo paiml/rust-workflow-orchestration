@@ -28,17 +28,21 @@
 //!                                       yield byte-identical `topo_order`s
 //!
 //! Run:
-//!   cargo run -p dag-cli --example etl_pipeline_dag
-//!   cargo run -p dag-cli --example etl_pipeline_dag --features dag-runner/forjar
+//!   cargo run -p dag-cli --example etl_pipeline_dag                       # both runners (forjar default-on)
+//!   cargo run -p dag-cli --example etl_pipeline_dag --no-default-features # LocalRunner only
 
+#[cfg(feature = "forjar")]
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(feature = "forjar")]
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
 use dag_core::{Context, Dag, Task, TaskOutput};
 use dag_lineage::LineageStore;
+#[cfg(feature = "forjar")]
 use dag_runner::forjar::ForjarRunner;
 use dag_runner::local::ClosureTask;
 use dag_runner::{LocalRunner, RunReport, Runner};
@@ -96,26 +100,36 @@ async fn main() -> Result<()> {
     println!("topo_order = {:?}", local_report.topo_order);
     println!("states     = {:?}", local_report.task_states);
 
-    // 2. ForjarRunner end-to-end run, when forjar is on PATH.
-    let yaml_path = workdir.join("forjar.yaml");
-    fs::write(&yaml_path, forjar_yaml_for_etl())?;
-    let forjar_state = workdir.join("forjar-state");
-    let forjar_runner = ForjarRunner::new(&yaml_path, &forjar_state, lineage.clone());
+    // 2. ForjarRunner end-to-end run, when forjar is on PATH and the
+    // `forjar` cargo feature is enabled.
+    let forjar_report: Option<RunReport>;
+    #[cfg(feature = "forjar")]
+    {
+        let yaml_path = workdir.join("forjar.yaml");
+        fs::write(&yaml_path, forjar_yaml_for_etl())?;
+        let forjar_state = workdir.join("forjar-state");
+        let forjar_runner = ForjarRunner::new(&yaml_path, &forjar_state, lineage.clone());
 
-    let forjar_report = match forjar_runner.run("forjar-run").await {
-        Ok(r) => Some(r),
-        Err(e) => {
-            eprintln!("\n[ForjarRunner] skipped — {e}");
-            eprintln!(
-                "(install forjar with `cargo install forjar` to exercise the second runner.)"
-            );
-            None
+        forjar_report = match forjar_runner.run("forjar-run").await {
+            Ok(r) => Some(r),
+            Err(e) => {
+                eprintln!("\n[ForjarRunner] skipped — {e}");
+                eprintln!(
+                    "(install forjar with `cargo install forjar` to exercise the second runner.)"
+                );
+                None
+            }
+        };
+        if let Some(r) = &forjar_report {
+            println!("\n[ForjarRunner]");
+            println!("topo_order = {:?}", r.topo_order);
+            println!("states     = {:?}", r.task_states);
         }
-    };
-    if let Some(r) = &forjar_report {
-        println!("\n[ForjarRunner]");
-        println!("topo_order = {:?}", r.topo_order);
-        println!("states     = {:?}", r.task_states);
+    }
+    #[cfg(not(feature = "forjar"))]
+    {
+        forjar_report = None;
+        eprintln!("\n[ForjarRunner] skipped — built without the `forjar` cargo feature");
     }
 
     // 3. Determinism probe: 10 LocalRunner runs, same topo each time.
@@ -344,6 +358,7 @@ fn build_etl_dag(workdir: &Path) -> Result<Dag<Arc<dyn Task>>> {
 /// tempdir). The DAG topology — 5 nodes, 4 edges, linear — matches the
 /// LocalRunner's, which is all the runner-output-equivalence contract
 /// asserts on.
+#[cfg(feature = "forjar")]
 fn forjar_yaml_for_etl() -> String {
     // Use a tempdir for `path` so we don't write into anything sensitive.
     let dir: PathBuf = std::env::temp_dir().join("etl-pipeline-dag-forjar-files");

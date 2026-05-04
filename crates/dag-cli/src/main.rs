@@ -15,6 +15,7 @@ use chrono::{DateTime, Utc};
 use clap::{Parser, Subcommand, ValueEnum};
 use dag_core::{Context, Dag, DagSpec, Task, TaskOutput};
 use dag_lineage::LineageStore;
+#[cfg(feature = "forjar")]
 use dag_runner::forjar::ForjarRunner;
 use dag_runner::{LocalRunner, Runner};
 use dag_scheduler::DagScheduler;
@@ -177,9 +178,20 @@ async fn cmd_run(
             print_report(&report);
         }
         RunnerKind::Forjar => {
-            let runner = ForjarRunner::new(&path, &forjar_state_dir, lineage.clone());
-            let report = runner.run(&run_id).await?;
-            print_report(&report);
+            #[cfg(feature = "forjar")]
+            {
+                let runner = ForjarRunner::new(&path, &forjar_state_dir, lineage.clone());
+                let report = runner.run(&run_id).await?;
+                print_report(&report);
+            }
+            #[cfg(not(feature = "forjar"))]
+            {
+                let _ = (path, forjar_state_dir, lineage);
+                bail!(
+                    "ForjarRunner is gated behind the `forjar` cargo feature. \
+                     Re-build with `cargo run -p dag-cli --features forjar -- run ...`"
+                );
+            }
         }
     }
     Ok(())

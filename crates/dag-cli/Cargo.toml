@@ -33,7 +33,15 @@ sqlx.workspace = true
 dag-core.workspace = true
 dag-lineage.workspace = true
 dag-scheduler.workspace = true
-dag-runner = { workspace = true, features = ["forjar"] }
+dag-runner.workspace = true
+
+[features]
+default = ["forjar"]
+# Forwards the dag-runner/forjar feature so the etl_pipeline_dag example
+# can compile in the ForjarRunner path. Default-on so `cargo run -p
+# dag-cli --example etl_pipeline_dag` exercises both runners; pass
+# `--no-default-features` to compile the in-process-only path.
+forjar = ["dag-runner/forjar"]
 
 [dev-dependencies]
 tempfile = "3"
