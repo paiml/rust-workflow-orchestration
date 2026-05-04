@@ -1,0 +1,279 @@
+metadata:
+  version: 1.0.0
+  created: '2026-05-04'
+  author: 'PAIML Engineering'
+  description: |
+    Provable contracts for the rust-workflow-orchestration workspace
+    (Coursera "Workflow Orchestration with Rust", c16 in the
+    Rust for Data Engineering specialization).
+
+    Eight runtime invariants split across two groups:
+
+    Demo-asserted (4) — enforced inside `crates/dag-cli/examples/etl_pipeline_dag.rs`
+    after the 5-task ETL chain runs through both LocalRunner and
+    ForjarRunner. Each maps to a runtime `assert!` call.
+
+    DAG topology (4) — enforced inside `dag_core::Dag` and validated by
+    `dag_core::DagSpec::build`. Each maps to a unit test in dag-core.
+
+    The YAML below is the formal spec linted by `pv lint contracts/`.
+  references:
+    - 'rust-workflow-orchestration README §Provable contracts'
+    - 'paiml/aprender (pv) — provable-contracts CLI'
+    - 'paiml/forjar — DAG engine the ForjarRunner subprocesses'
+    - 'crates/dag-cli/examples/etl_pipeline_dag.rs — the demo whose runs assert C1..C4'
+
+equations:
+  all_tasks_complete:
+    formula: 'forall t in tasks. report.task_states[t.id] == Succeeded'
+    domain: 'tasks ∈ Vec<Task>, report ∈ RunReport'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.AllTasksComplete
+    postconditions:
+    - 'every task in topo_order has state Succeeded'
+
+  lineage_edge_count_exact:
+    formula: 'lineage.edge_count(run_id) == 4'
+    domain: 'lineage ∈ LineageStore, run_id ∈ String'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.LineageEdgeCountExact
+    postconditions:
+    - 'lineage_edges row count for the run equals 4 (5 tasks, 4 deps in a linear chain)'
+
+  runner_output_equivalence:
+    formula: 'local_report.topo_order == forjar_report.topo_order'
+    domain: 'local_report, forjar_report ∈ RunReport'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.RunnerOutputEquivalence
+    postconditions:
+    - 'LocalRunner and ForjarRunner emit identical topological orders for the linear chain'
+    - 'task id sets recorded in task_outputs are equal across runners'
+
+  topo_determinism:
+    formula: 'forall i in 0..N. runs[i].topo_order == runs[0].topo_order'
+    domain: 'runs ∈ Vec<RunReport>, N == 10'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.TopoDeterminism
+    postconditions:
+    - '10 consecutive runs of the same DAG produce byte-identical topo_order'
+
+  no_cycles:
+    formula: 'is_cyclic_directed(dag) == false'
+    domain: 'dag ∈ Dag<T>'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.NoCycles
+    postconditions:
+    - 'every constructed DAG passes Dag::cycle_check before topo_sort runs'
+
+  every_task_reachable_in_dag:
+    formula: 'forall n in dag.nodes. parents(n).is_empty() implies !children(n).is_empty()'
+    domain: 'dag ∈ Dag<T>, |dag.nodes| > 1'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.EveryTaskReachable
+    postconditions:
+    - 'multi-node DAGs have no orphan tasks'
+
+  no_orphan_tasks:
+    formula: 'forall t in tasks. exists e in edges. e.from == t or e.to == t'
+    domain: 'tasks ∈ Vec<TaskSpec>, |tasks| > 1, edges ∈ DagSpec.edges'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.NoOrphanTasks
+    postconditions:
+    - 'every task in a multi-node DagSpec is referenced by at least one edge'
+
+  edge_direction_correct:
+    formula: 'forall e in edges. e.from in tasks and e.to in tasks and e.from != e.to'
+    domain: 'edges ∈ DagSpec.edges, tasks ∈ DagSpec.tasks'
+    codomain: 'bool'
+    lean_theorem: Theorems.DagRust.EdgeDirectionCorrect
+    postconditions:
+    - 'every edge endpoint is a known task id; no self-loops are accepted'
+
+proof_obligations:
+  - type: postcondition
+    property: 'All five ETL tasks reach Succeeded state'
+    formal: 'forall t. report.task_states[t] == Succeeded'
+    applies_to: etl_pipeline_dag
+  - type: postcondition
+    property: 'Lineage store records exactly 4 edges for the linear chain'
+    formal: 'lineage.edge_count(run_id) == 4'
+    applies_to: etl_pipeline_dag
+  - type: postcondition
+    property: 'LocalRunner and ForjarRunner agree on topo order + task set'
+    formal: 'local.topo_order == forjar.topo_order'
+    applies_to: etl_pipeline_dag
+  - type: invariant
+    property: '10 consecutive LocalRunner runs produce identical topo orders'
+    formal: 'forall i. runs[i].topo_order == runs[0].topo_order'
+    applies_to: etl_pipeline_dag
+  - type: invariant
+    property: 'No DAG accepted by Dag::build contains a cycle'
+    formal: 'is_cyclic_directed(dag) == false'
+    applies_to: dag_core
+  - type: invariant
+    property: 'Every multi-node DAG has all tasks reachable from at least one edge'
+    formal: 'forall n. parents(n).is_empty() implies !children(n).is_empty()'
+    applies_to: dag_core
+  - type: invariant
+    property: 'Multi-node DagSpec has no orphan tasks'
+    formal: 'forall t in tasks. ∃ e in edges. e references t'
+    applies_to: dag_core
+  - type: invariant
+    property: 'Every edge in a DagSpec points from a known task to a known task'
+    formal: 'forall e in edges. e.from ∈ tasks ∧ e.to ∈ tasks ∧ e.from != e.to'
+    applies_to: dag_core
+
+enforcement:
+  all_tasks_complete:
+    description: 'The 5-task ETL chain must reach Succeeded on every node.'
+    check: 'etl_pipeline_dag asserts report.all_succeeded() on the LocalRunner result'
+    severity: 'ERROR'
+
+  lineage_edge_count_exact:
+    description: 'A 5-task linear chain has exactly 4 dependency edges.'
+    check: 'etl_pipeline_dag asserts lineage.edge_count(Some(run_id)) == 4'
+    severity: 'ERROR'
+
+  runner_output_equivalence:
+    description: 'Both runners executing the same DAG produce identical topo orders.'
+    check: 'etl_pipeline_dag asserts local.topo_order == forjar.topo_order plus task id set equality'
+    severity: 'ERROR'
+
+  topo_determinism:
+    description: '10 consecutive LocalRunner runs of the same DAG produce identical topo orders.'
+    check: 'etl_pipeline_dag asserts topo_orders[i] == topo_orders[0] for i in 0..10'
+    severity: 'ERROR'
+
+  no_cycles:
+    description: 'Dag::cycle_check rejects any DAG with a back-edge.'
+    check: 'dag_core unit test cycle_detection'
+    severity: 'ERROR'
+
+  every_task_reachable_in_dag:
+    description: 'Multi-node DAGs reject the orphan-task pattern.'
+    check: 'dag_core::Dag::every_task_reachable_in_dag returns false on a 2-node, 0-edge DAG'
+    severity: 'WARN'
+
+  no_orphan_tasks:
+    description: 'DagSpec parser rejects multi-node specs where any task is unreferenced.'
+    check: 'dag_core unit test (multi-node spec without edges produces every_task_reachable_in_dag == false)'
+    severity: 'WARN'
+
+  edge_direction_correct:
+    description: 'DagSpec::build errors on edges whose endpoints are not in the task set.'
+    check: 'dag_core unit test dag_spec_dangling_dep_errors'
+    severity: 'ERROR'
+
+falsification_tests:
+  - id: FALSIFY-DAG-001
+    rule: 'All five ETL tasks reach Succeeded'
+    prediction: 'For the 5-task linear chain extract -> transform -> validate -> load -> notify, every task ends in Succeeded.'
+    test: 'etl_pipeline_dag runtime assert on report.all_succeeded(); CI smokes the demo via the integration job.'
+    if_fails: 'A task body raised an error; the runner correctly marked it Failed and the dependent tasks Skipped. Inspect the lineage store for the offending task.'
+
+  - id: FALSIFY-DAG-002
+    rule: 'Lineage store contains exactly 4 edges for the chain'
+    prediction: 'A 5-task linear DAG has 4 edges, recorded once each by the LocalRunner walk.'
+    test: 'etl_pipeline_dag runtime assert on lineage.edge_count(Some(run_id)) == 4.'
+    if_fails: 'The DAG topology is no longer a linear chain (extra/missing edge), or record_edge is double-inserting (broken idempotency).'
+
+  - id: FALSIFY-DAG-003
+    rule: 'LocalRunner and ForjarRunner agree on the topo order'
+    prediction: 'A linear chain has only one topo-valid order; both runners emit it byte-for-byte.'
+    test: 'etl_pipeline_dag runtime assert on local.topo_order == forjar.topo_order.'
+    if_fails: 'One runners changed the topo tie-break or added a node; the boundary contract between the two engines drifted.'
+
+  - id: FALSIFY-DAG-004
+    rule: 'Topo order is deterministic across 10 runs'
+    prediction: 'Petgraph Kahn topo with insertion-order tie-break gives the same answer on the same DAG every time.'
+    test: 'etl_pipeline_dag runtime assert on topo_orders[i] == topo_orders[0] for i in 0..10.'
+    if_fails: 'A non-deterministic data structure leaked into the DAG construction (HashMap iteration, Tokio scheduling). Replay with traces enabled.'
+
+  - id: FALSIFY-DAG-005
+    rule: 'No-cycle invariant'
+    prediction: 'Dag::cycle_check returns Err(DagError::Cycle) on any back edge.'
+    test: 'dag_core unit test cycle_detection inserts a -> b -> a and asserts the cycle is detected.'
+    if_fails: 'petgraph::is_cyclic_directed regressed or the wrapper bypassed the check.'
+
+  - id: FALSIFY-DAG-006
+    rule: 'Every multi-node task has at least one neighbor'
+    prediction: 'A 2-node DAG with 0 edges fails every_task_reachable_in_dag.'
+    test: 'dag_core unit test exercises every_task_reachable_in_dag on the orphan DAG.'
+    if_fails: 'The orphan-detection helper became permissive; lineage store will silently lose visibility into unrelated tasks.'
+
+  - id: FALSIFY-DAG-007
+    rule: 'No orphan tasks in a multi-node DagSpec'
+    prediction: 'Every task in a multi-node DagSpec must appear in at least one edge endpoint.'
+    test: 'dag_core unit test dag_spec_yaml_roundtrip exercises a 3-task chain where every task is referenced.'
+    if_fails: 'The yaml deserializer dropped depends_on entries or DagSpec.build skipped edge construction.'
+
+  - id: FALSIFY-DAG-008
+    rule: 'Edge endpoints exist + are distinct'
+    prediction: 'DagSpec.build errors on a depends_on whose target is not declared and never permits self-loops.'
+    test: 'dag_core unit test dag_spec_dangling_dep_errors validates the rejection.'
+    if_fails: 'Spec validation is silently accepting bad inputs; the runner will panic mid-walk on a missing node lookup.'
+
+qa_gate:
+  id: F-DAG-001
+  name: 'DAG Workflow Orchestration Contract'
+  description: 'Eight runtime invariants asserted across the etl_pipeline_dag demo and the dag-core unit tests.'
+  checks:
+    - 'all_tasks_complete'
+    - 'lineage_edge_count_exact'
+    - 'runner_output_equivalence'
+    - 'topo_determinism'
+    - 'no_cycles'
+    - 'every_task_reachable_in_dag'
+    - 'no_orphan_tasks'
+    - 'edge_direction_correct'
+  pass_criteria: 'All four falsification asserts in etl_pipeline_dag pass on both runners; the four DAG topology invariants pass in dag_core unit tests.'
+
+kani_harnesses:
+  - id: KANI-DAG-001
+    obligation: 'All five ETL tasks reach Succeeded'
+    property: 'forall t in tasks. report.task_states[t] == Succeeded'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_all_tasks_complete
+  - id: KANI-DAG-002
+    obligation: 'Lineage edge count is exactly 4'
+    property: 'lineage.edge_count(run_id) == 4'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_lineage_edge_count_exact
+  - id: KANI-DAG-003
+    obligation: 'Both runners agree on topo order'
+    property: 'local_report.topo_order == forjar_report.topo_order'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_runner_output_equivalence
+  - id: KANI-DAG-004
+    obligation: 'Topo order is deterministic across runs'
+    property: 'forall i. runs[i].topo_order == runs[0].topo_order'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_topo_determinism
+  - id: KANI-DAG-005
+    obligation: 'No cycles in any constructed DAG'
+    property: 'is_cyclic_directed(dag) == false'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_no_cycles
+  - id: KANI-DAG-006
+    obligation: 'No orphan tasks in multi-node DAGs'
+    property: 'forall n. parents(n).is_empty() implies !children(n).is_empty()'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_every_task_reachable_in_dag
+  - id: KANI-DAG-007
+    obligation: 'No unreferenced tasks in DagSpec'
+    property: 'forall t in tasks. ∃ e in edges. e references t'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_no_orphan_tasks
+  - id: KANI-DAG-008
+    obligation: 'Every edge points from one known task to another'
+    property: 'forall e in edges. e.from ∈ tasks ∧ e.to ∈ tasks ∧ e.from != e.to'
+    bound: 4
+    strategy: exhaustive
+    harness: verify_edge_direction_correct
