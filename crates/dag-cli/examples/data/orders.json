@@ -1,0 +1,7 @@
+[
+  { "id": 1001, "sku": "RUST-BOOK-01", "qty": 3, "unit_price": 39.95 },
+  { "id": 1002, "sku": "PETGRAPH-MUG", "qty": 2, "unit_price": 12.50 },
+  { "id": 1003, "sku": "TOKIO-STICKER-PACK", "qty": 5, "unit_price": 5.00 },
+  { "id": 1004, "sku": "FORJAR-TEE-L", "qty": 1, "unit_price": 28.00 },
+  { "id": 1005, "sku": "SQLX-POSTER", "qty": 4, "unit_price": 15.75 }
+]

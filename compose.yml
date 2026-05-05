@@ -1,0 +1,32 @@
+# SQLite is the default state backend for the c16 demo (`dag-cli run`),
+# so this compose file is OPTIONAL — used only for the M5 production-
+# hardening lesson where the orchestrator's state moves off SQLite onto
+# a shared Postgres. Bring it up only when the lesson asks for it:
+#
+#   docker compose up -d postgres
+#
+# To run the closing demo end-to-end you do NOT need docker — the demo
+# uses an embedded SQLite file in /tmp.
+services:
+  postgres:
+    image: postgres:16
+    container_name: rust-workflow-orchestration-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dag
+      POSTGRES_PASSWORD: dagdev
+      POSTGRES_DB: dag_state
+    ports:
+      - "5432:5432"
+    volumes:
+      - dag_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dag -d dag_state"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 10s
+
+volumes:
+  dag_postgres_data:
+    name: rust-workflow-orchestration-postgres-data

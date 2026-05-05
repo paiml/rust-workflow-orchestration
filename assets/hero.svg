@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 480" width="1280" height="480">
+<!-- HERO — paiml/rust-workflow-orchestration README banner.
+     Three zones, oxide-premium chassis (matches mysql-from-zero):
+       left   = 5-node ETL DAG (extract -> transform -> validate -> load -> notify)
+       center = clock + cron arrow showing scheduling
+       right  = forjar logo silhouette in amber, "DAG engine in production" framing
+     Side pillar = lineage box (upstream/downstream lookup).
+     Bottom strip = the four runtime ETL contracts. -->
+
+<defs>
+  <style>
+    .h { font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; }
+    .m { font-family: 'Cascadia Code', 'Fira Code', monospace; }
+    .label { font-family: 'Segoe UI', sans-serif; letter-spacing: 0.12em; }
+  </style>
+
+  <radialGradient id="bg" cx="50%" cy="40%" r="80%">
+    <stop offset="0%" stop-color="#1a2540"/>
+    <stop offset="100%" stop-color="#0e1726"/>
+  </radialGradient>
+  <linearGradient id="accent-strip" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#36b37e" stop-opacity="0.85"/>
+    <stop offset="35%" stop-color="#00b8d9" stop-opacity="0.85"/>
+    <stop offset="70%" stop-color="#9c84ff" stop-opacity="0.85"/>
+    <stop offset="100%" stop-color="#ffab00" stop-opacity="0.85"/>
+  </linearGradient>
+  <radialGradient id="zone-dag" cx="50%" cy="50%" r="60%">
+    <stop offset="0%" stop-color="#36b37e" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#36b37e" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="zone-clock" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#00b8d9" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#00b8d9" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="zone-forjar" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#ffab00" stop-opacity="0.22"/>
+    <stop offset="100%" stop-color="#ffab00" stop-opacity="0"/>
+  </radialGradient>
+  <marker id="arrow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0 0 L 12 7 L 0 14 Z" fill="#78dce8"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0 0 L 12 7 L 0 14 Z" fill="#ffab00"/>
+  </marker>
+</defs>
+
+<rect width="1280" height="480" fill="url(#bg)"/>
+
+<!-- Top accent strip -->
+<rect x="0" y="0" width="1280" height="6" fill="url(#accent-strip)"/>
+
+<!-- Title block — top left -->
+<g class="h">
+  <text x="60" y="84" font-size="40" font-weight="700" fill="#eeeeee">Workflow Orchestration in Rust</text>
+  <text x="60" y="118" font-size="18" fill="#a5d6ff" letter-spacing="0.05em">Rust for Data Engineering · DAG types · sqlx state · forjar runner</text>
+  <text x="60" y="146" font-size="13" fill="#7ee787" letter-spacing="0.10em" font-weight="700">5 MODULES · 20 LESSONS · 8 RUNTIME CONTRACTS · forjar-anchored</text>
+</g>
+
+<!-- ZONE 1: 5-node DAG, left side, centered around (260, 290) -->
+<circle cx="260" cy="300" r="160" fill="url(#zone-dag)"/>
+<g id="dag-zone">
+  <!-- 5 nodes in a chain across two rows for visual density -->
+  <!-- extract -->
+  <g id="node-extract">
+    <rect x="80" y="200" width="100" height="44" rx="8" fill="#0e1726" stroke="#7ee787" stroke-width="3"/>
+    <text x="130" y="228" text-anchor="middle" class="m" font-size="13" font-weight="700" fill="#7ee787">extract</text>
+  </g>
+  <!-- transform -->
+  <g id="node-transform">
+    <rect x="200" y="200" width="100" height="44" rx="8" fill="#0e1726" stroke="#78dce8" stroke-width="3"/>
+    <text x="250" y="228" text-anchor="middle" class="m" font-size="13" font-weight="700" fill="#78dce8">transform</text>
+  </g>
+  <!-- validate -->
+  <g id="node-validate">
+    <rect x="320" y="200" width="100" height="44" rx="8" fill="#0e1726" stroke="#9c84ff" stroke-width="3"/>
+    <text x="370" y="228" text-anchor="middle" class="m" font-size="13" font-weight="700" fill="#9c84ff">validate</text>
+  </g>
+  <!-- load -->
+  <g id="node-load">
+    <rect x="140" y="290" width="100" height="44" rx="8" fill="#0e1726" stroke="#36b37e" stroke-width="3"/>
+    <text x="190" y="318" text-anchor="middle" class="m" font-size="13" font-weight="700" fill="#36b37e">load</text>
+  </g>
+  <!-- notify -->
+  <g id="node-notify">
+    <rect x="260" y="290" width="100" height="44" rx="8" fill="#0e1726" stroke="#ffab00" stroke-width="3"/>
+    <text x="310" y="318" text-anchor="middle" class="m" font-size="13" font-weight="700" fill="#ffab00">notify</text>
+  </g>
+
+  <!-- edges (linear chain across the layout) -->
+  <line x1="180" y1="222" x2="194" y2="222" stroke="#78dce8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="300" y1="222" x2="314" y2="222" stroke="#78dce8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <!-- validate -> load (loops down-left to second row) -->
+  <path d="M 370 244 C 350 280 250 290 200 290" fill="none" stroke="#78dce8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <!-- load -> notify -->
+  <line x1="240" y1="312" x2="254" y2="312" stroke="#78dce8" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <text x="220" y="380" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#78dce8">5-NODE ETL DAG</text>
+</g>
+
+<!-- ZONE 2: Clock + cron, center, around (640, 280) -->
+<circle cx="640" cy="280" r="130" fill="url(#zone-clock)"/>
+<g id="clock-zone">
+  <!-- clock face -->
+  <circle cx="640" cy="260" r="60" fill="#0e1726" stroke="#00b8d9" stroke-width="3"/>
+  <!-- hour ticks -->
+  <line x1="640" y1="208" x2="640" y2="216" stroke="#00b8d9" stroke-width="2"/>
+  <line x1="692" y1="260" x2="684" y2="260" stroke="#00b8d9" stroke-width="2"/>
+  <line x1="640" y1="312" x2="640" y2="304" stroke="#00b8d9" stroke-width="2"/>
+  <line x1="588" y1="260" x2="596" y2="260" stroke="#00b8d9" stroke-width="2"/>
+  <!-- hands -->
+  <line x1="640" y1="260" x2="640" y2="222" stroke="#7ee787" stroke-width="3"/>
+  <line x1="640" y1="260" x2="672" y2="278" stroke="#9c84ff" stroke-width="3"/>
+  <circle cx="640" cy="260" r="4" fill="#eeeeee"/>
+
+  <!-- cron expression block under the clock -->
+  <rect x="556" y="338" width="170" height="32" rx="6" fill="#1a1d23" stroke="#00b8d9" stroke-width="2"/>
+  <text x="641" y="358" text-anchor="middle" class="m" font-size="13" fill="#a5d6ff">0 0 6 * * *</text>
+
+  <!-- arrow from clock down to cron -->
+  <line x1="640" y1="320" x2="640" y2="334" stroke="#00b8d9" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <text x="640" y="396" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#00b8d9">CRON SCHEDULER</text>
+</g>
+
+<!-- ZONE 3: forjar silhouette, right, around (1010, 280) -->
+<circle cx="1010" cy="280" r="140" fill="url(#zone-forjar)"/>
+<g id="forjar-zone">
+  <!-- stylized 'F' anvil silhouette in amber, evoking the forjar logo idea -->
+  <g transform="translate(950, 200)">
+    <!-- anvil body -->
+    <path d="M 12 0 L 108 0 L 96 22 L 24 22 Z" fill="#ffab00" fill-opacity="0.85" stroke="#ff9d1a" stroke-width="2"/>
+    <!-- anvil stem -->
+    <rect x="44" y="22" width="32" height="34" fill="#ffab00" fill-opacity="0.85" stroke="#ff9d1a" stroke-width="2"/>
+    <!-- anvil base -->
+    <path d="M 8 56 L 112 56 L 104 78 L 16 78 Z" fill="#ffab00" fill-opacity="0.85" stroke="#ff9d1a" stroke-width="2"/>
+    <!-- spark glints around the anvil -->
+    <circle cx="-8" cy="6" r="3" fill="#ffe066"/>
+    <circle cx="124" cy="14" r="3" fill="#ffe066"/>
+    <circle cx="-12" cy="62" r="2.5" fill="#ffe066"/>
+    <circle cx="128" cy="68" r="2.5" fill="#ffe066"/>
+  </g>
+
+  <!-- forjar wordmark -->
+  <text x="1010" y="332" text-anchor="middle" class="h" font-size="22" font-weight="700" fill="#ffab00">forjar</text>
+  <text x="1010" y="352" text-anchor="middle" class="m" font-size="11" fill="#ffe066">v1.4 · crates.io</text>
+
+  <text x="1010" y="396" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#ffab00">DAG ENGINE IN PRODUCTION</text>
+</g>
+
+<!-- arrows tying ETL DAG -> scheduler -> forjar runner -->
+<line x1="430" y1="278" x2="510" y2="278" stroke="#78dce8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="780" y1="278" x2="850" y2="278" stroke="#ffab00" stroke-width="3" marker-end="url(#arrow-amber)"/>
+
+<!-- Lineage pillar — far right, hugs the right edge -->
+<g id="lineage-pillar">
+  <rect x="1170" y="86" width="100" height="280" rx="10" fill="#0e1726" stroke="#9c84ff" stroke-width="3"/>
+  <rect x="1170" y="86" width="100" height="32" rx="10" fill="#28244a" stroke="#9c84ff" stroke-width="2"/>
+  <text x="1220" y="108" text-anchor="middle" class="h" font-size="13" font-weight="700" fill="#eeeeee">Lineage</text>
+  <line x1="1180" y1="132" x2="1260" y2="132" stroke="#9c84ff" stroke-width="1.5" opacity="0.5"/>
+  <text x="1180" y="156" class="m" font-size="11" fill="#b8acff">upstream(t)</text>
+  <text x="1180" y="178" class="m" font-size="11" fill="#b8acff">downstream(t)</text>
+  <text x="1180" y="200" class="m" font-size="11" fill="#b8acff">edges_for_run</text>
+  <line x1="1180" y1="214" x2="1260" y2="214" stroke="#9c84ff" stroke-width="1" opacity="0.4"/>
+  <text x="1180" y="236" class="m" font-size="11" fill="#a5d6ff">sqlx</text>
+  <text x="1180" y="258" class="m" font-size="11" fill="#a5d6ff">sqlite</text>
+  <text x="1180" y="280" class="m" font-size="11" fill="#a5d6ff">+ mermaid</text>
+  <line x1="1180" y1="294" x2="1260" y2="294" stroke="#9c84ff" stroke-width="1" opacity="0.4"/>
+  <text x="1220" y="318" text-anchor="middle" class="label" font-size="10" fill="#b8acff">UPSTREAM</text>
+  <text x="1220" y="338" text-anchor="middle" class="m" font-size="13" fill="#7ee787">-></text>
+  <text x="1220" y="358" text-anchor="middle" class="label" font-size="10" fill="#b8acff">DOWNSTREAM</text>
+</g>
+
+<!-- Bottom contracts strip -->
+<g id="contracts-strip">
+  <rect x="60" y="420" width="1100" height="36" rx="6" fill="#161b22" stroke="#7ee787" stroke-width="2" fill-opacity="0.85"/>
+  <text x="80" y="444" class="h" font-size="13" font-weight="700" fill="#7ee787">Runtime contracts:</text>
+  <text x="232" y="444" class="m" font-size="13" fill="#eeeeee">all-tasks-complete · lineage-edge-count == 4 · runner-output-equiv · topo-determinism</text>
+</g>
+
+<!-- GRID PROTOCOL MANIFEST
+  template: HERO (README banner)
+  canvas: 1280x480
+  zones: dag@(220,278) | clock@(640,280) | forjar@(1010,280) | lineage-pillar@(1170..1270, 86..366)
+  text_elements: 22
+  palette_colors: [#0e1726, #1a2540, #1a1d23, #161b22, #28244a, #36b37e, #7ee787, #78dce8, #00b8d9, #9c84ff, #b8acff, #ffab00, #ff9d1a, #ffe066, #a5d6ff, #eeeeee]
+  bounds_check: all elements within 0,0 -> 1280,480
+-->
+</svg>

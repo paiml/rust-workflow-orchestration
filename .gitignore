@@ -9,3 +9,22 @@
 *.profraw
 lcov.info
 /coverage/
+
+# SQLite state files written by the demo + dag-cli (lineage + per-task state)
+*.db
+*.db-journal
+lineage.sqlite*
+state.sqlite*
+
+# Forjar lock-file directory created by `dag run --runner forjar`
+/state/
+
+# Demo scratch dirs (the closing demo writes into /tmp, but if anyone runs
+# with SCRATCH_ROOT inside the repo this catches the artifacts)
+/scratch/
+/tmp/
+
+# Auto-generated tool caches — never check these in.
+/.pmat/
+/.pv/
+/contracts/.pv/
